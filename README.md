@@ -6,7 +6,7 @@
 Production-grade event-sourcing framework for LLM agent architectures. Captures state mutations, tool executions, and LLM interactions as immutable event streams. Enables deterministic replay, runtime state patching, time-travel debugging, and Git-like branching for agent trajectories. Solves non-deterministic agent debugging by separating execution from state history.
 
 ## Backlog
-- [ ] Define core event schemas and strictly typed state mutation interfaces.
+- [x] Define core event schemas and strictly typed state mutation interfaces.
 - [ ] Implement thread-safe SQLite and in-memory event store backends.
 - [ ] Build state projector engine to reconstruct agent state from event streams.
 - [ ] Develop execution wrapper to intercept LLM calls and tool execution side-effects.
