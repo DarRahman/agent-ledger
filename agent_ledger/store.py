@@ -50,6 +50,16 @@ class BaseEventStore(ABC):
         """List all tracked session IDs."""
         pass
 
+    @abstractmethod
+    def truncate(self, session_id: str, sequence_number: int) -> None:
+        """Deletes all events in a session with sequence number greater than sequence_number.
+
+        Args:
+            session_id: Unique identifier for the session.
+            sequence_number: The sequence number threshold. Events with sequence_number > threshold are deleted.
+        """
+        pass
+
 
 class InMemoryEventStore(BaseEventStore):
     """Thread-safe in-memory event store using RLock."""
@@ -101,6 +111,16 @@ class InMemoryEventStore(BaseEventStore):
     def list_sessions(self) -> List[str]:
         with self._lock:
             return sorted(list(self._stores.keys()))
+
+    def truncate(self, session_id: str, sequence_number: int) -> None:
+        with self._lock:
+            if session_id in self._stores:
+                self._stores[session_id] = [
+                    e for e in self._stores[session_id] if e.sequence_number <= sequence_number
+                ]
+                logger.info(
+                    "Truncated session %s to sequence %d", session_id, sequence_number
+                )
 
 
 class SQLiteEventStore(BaseEventStore):
@@ -225,6 +245,17 @@ class SQLiteEventStore(BaseEventStore):
             cursor.execute("SELECT DISTINCT session_id FROM events ORDER BY session_id ASC")
             rows = cursor.fetchall()
             return [row["session_id"] for row in rows]
+
+    def truncate(self, session_id: str, sequence_number: int) -> None:
+        with self._lock:
+            with self._conn:
+                self._conn.execute(
+                    "DELETE FROM events WHERE session_id = ? AND sequence_number > ?",
+                    (session_id, sequence_number),
+                )
+            logger.info(
+                "Truncated SQLite session %s to sequence %d", session_id, sequence_number
+            )
 
     def close(self) -> None:
         with self._lock:

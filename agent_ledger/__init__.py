@@ -26,6 +26,7 @@ from agent_ledger.store import (
     SQLiteEventStore,
 )
 from agent_ledger.engine import AgentSession, LLMCallTracker, ToolCallTracker
+from agent_ledger.replay import ReplayAgentSession
 
 __all__ = [
     "EventType",
@@ -50,4 +51,5 @@ __all__ = [
     "AgentSession",
     "LLMCallTracker",
     "ToolCallTracker",
+    "ReplayAgentSession",
 ]
