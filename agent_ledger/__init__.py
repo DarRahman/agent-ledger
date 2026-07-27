@@ -17,6 +17,7 @@ from agent_ledger.models import (
     ToolCallInitiatedPayload,
     apply_mutation,
 )
+from agent_ledger.projector import AgentState, StateProjector
 from agent_ledger.store import (
     BaseEventStore,
     DuplicateSequenceError,
@@ -43,4 +44,6 @@ __all__ = [
     "SQLiteEventStore",
     "EventStoreError",
     "DuplicateSequenceError",
+    "AgentState",
+    "StateProjector",
 ]
