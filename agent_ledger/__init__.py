@@ -25,6 +25,7 @@ from agent_ledger.store import (
     InMemoryEventStore,
     SQLiteEventStore,
 )
+from agent_ledger.engine import AgentSession, LLMCallTracker, ToolCallTracker
 
 __all__ = [
     "EventType",
@@ -46,4 +47,7 @@ __all__ = [
     "DuplicateSequenceError",
     "AgentState",
     "StateProjector",
+    "AgentSession",
+    "LLMCallTracker",
+    "ToolCallTracker",
 ]
