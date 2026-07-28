@@ -10,7 +10,7 @@ from contextlib import contextmanager
 from typing import Any, Callable, Dict, Generator, List, Optional, Union
 
 from agent_ledger.engine import AgentSession, LLMCallTracker, ToolCallTracker
-from agent_ledger.models import Event, EventType
+from agent_ledger.models import Event, EventType, StateMutation, StateMutatedPayload
 from agent_ledger.projector import StateProjector
 from agent_ledger.store import BaseEventStore
 
@@ -31,7 +31,7 @@ class ReplayAgentSession(AgentSession):
         store: BaseEventStore,
         checkpoint_sequence: Optional[int] = None,
         checkpoint_timestamp: Optional[float] = None,
-    ) -> None:
+    ) -> None: 
         """Initializes the ReplayAgentSession.
 
         Args:
@@ -104,7 +104,7 @@ class ReplayAgentSession(AgentSession):
         projected_state = projector.project(replay_events)
 
         # Build the replay queue of completed side-effects
-        self._replay_queue: List[Dict[str, Any]] = [
+        self._replay_queue: List[Dict[str, Any]] = [ 
             item
             for item in projected_state.history
             if item.get("status") == "completed"
@@ -120,8 +120,41 @@ class ReplayAgentSession(AgentSession):
             initial_state=initial_state,
         )
 
+        # Restore the projected state at the checkpoint
+        self.state = copy.deepcopy(projected_state.state)
+
         # Reset sequence number to 0 so that replay execution matches historical sequences
         self._sequence_number = 0
+
+    def mutate_state(self, mutations: List[StateMutation]) -> None:
+        """Applies state mutations, updates local state, and records the STATE_MUTATED event.
+
+        Overridden to avoid double-applying mutations that are part of the replayed sequence.
+
+        Args:
+            mutations: List of StateMutation objects to apply.
+        """
+        if not self._is_active:
+            raise ValueError(f"Session {self.session_id} is not active.")
+
+        next_seq = self._sequence_number + 1
+        if self._sequence_number > 0 and next_seq <= self._checkpoint_sequence:
+            # It's being replayed. We do NOT apply it to self.state since self.state
+            # was already initialized to the checkpoint state.
+            payload = StateMutatedPayload(mutations=mutations)
+            self._append_event(EventType.STATE_MUTATED, payload)
+            logger.debug("Skipped applying replayed mutation to state: %s", mutations)
+        else:
+            # Beyond checkpoint or branch diff (seq_num == 0), apply normally
+            super().mutate_state(mutations)
+
+    def _next_sequence(self) -> int:
+        next_seq = self._sequence_number + 1
+        latest_in_store = self.store.get_latest_sequence(self.session_id)
+        if next_seq <= latest_in_store:
+            self._sequence_number = latest_in_store
+        self._sequence_number += 1
+        return self._sequence_number
 
     def _append_event(
         self, 
@@ -129,6 +162,18 @@ class ReplayAgentSession(AgentSession):
         payload: Any, 
         metadata: Optional[Dict[str, Any]] = None
     ) -> Event:
+        if self._sequence_number == 0 and event_type != EventType.AGENT_STARTED:
+            latest_seq = max(self._checkpoint_sequence, self.store.get_latest_sequence(self.session_id))
+            event = Event.create(
+                session_id=self.session_id,
+                sequence_number=latest_seq + 1,
+                event_type=event_type,
+                payload=payload,
+                metadata=metadata,
+            )
+            self.store.append(event)
+            return event
+
         next_seq = self._sequence_number + 1
         if next_seq <= self._checkpoint_sequence:
             # Fetch the historical event

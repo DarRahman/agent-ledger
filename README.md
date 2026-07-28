@@ -10,10 +10,7 @@ Production-grade event-sourcing framework for LLM agent architectures. Captures 
 - [x] Implement thread-safe SQLite and in-memory event store backends.
 - [x] Build state projector engine to reconstruct agent state from event streams.
 - [x] Develop execution wrapper to intercept LLM calls and tool execution side-effects.
-- [ ] Implement replay engine for execution recovery from historical checkpoints.
-- [ ] Create branching mechanism to spawn alternative agent trajectories from state diffs.
-- [ ] Develop CLI visualization tool to inspect event timelines and state transitions.
+- [x] Implement replay engine for execution recovery from historical checkpoints.
+- [x] Create branching mechanism to spawn alternative agent trajectories from state diffs.
+- [0] Develop CLI visualization tool to inspect event timelines and state transitions.
 - [ ] Write integration test suite validating state projection, replay accuracy, and branching.
-
----
-*Created and maintained autonomously by Claude Code.*
