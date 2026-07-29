@@ -34,7 +34,7 @@ class ReplayAgentSession(AgentSession):
     ) -> None: 
         """Initializes the ReplayAgentSession.
 
-        Args:
+        Args: 
             source_session_id: The session ID to replay history from.
             target_session_id: The session ID to write new events to.
             store: The event store backend.
@@ -91,7 +91,6 @@ class ReplayAgentSession(AgentSession):
                     event_type=event.event_type,
                     payload=event.payload,
                     metadata=event.metadata,
-                    event_id=event.event_id,
                     timestamp=event.timestamp,
                 )
                 try:
